@@ -1,6 +1,8 @@
 import { compactError, parseHeaderNumber, roundMs } from "./results.ts";
 import type { GenericRequestParams, Keys, ProviderResponse, SseParseResult } from "./types.ts";
 
+const REQUEST_TIMEOUT_MS = 30_000;
+
 export async function dispatchRequest(
   keys: Keys,
   params: GenericRequestParams,
@@ -77,11 +79,11 @@ async function makeOpenAiRequest(
       },
     };
 
-    if (params.modelSpec.openAiFamily === "gpt5_reasoning") {
-      body.reasoning = { effort: "none" };
+    if (params.modelSpec.openAiReasoningEffort) {
+      body.reasoning = { effort: params.modelSpec.openAiReasoningEffort };
     }
 
-    const response = await fetch("https://api.openai.com/v1/responses", {
+    const response = await fetchWithRetry("https://api.openai.com/v1/responses", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -155,7 +157,7 @@ async function makeAnthropicRequest(
       body.output_config = { effort: "low" };
     }
 
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
+    const response = await fetchWithRetry("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
         "x-api-key": apiKey,
@@ -232,7 +234,7 @@ async function makeGeminiRequest(
       };
     }
 
-    const response = await fetch(
+    const response = await fetchWithRetry(
       `https://generativelanguage.googleapis.com/v1beta/models/${params.modelSpec.model}:streamGenerateContent?alt=sse`,
       {
         method: "POST",
@@ -277,6 +279,46 @@ async function makeGeminiRequest(
       error instanceof Error ? error.message : String(error),
     );
   }
+}
+
+async function fetchWithRetry(url: string, init: RequestInit, retries = 1): Promise<Response> {
+  let lastResponse: Response | null = null;
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    try {
+      const response = await fetch(url, {
+        ...init,
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      });
+      if (!shouldRetry(response.status) || attempt === retries) {
+        return response;
+      }
+      lastResponse = response;
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      if (attempt === retries) {
+        throw lastError;
+      }
+    }
+    await delay(250 * (attempt + 1));
+  }
+
+  if (lastResponse) {
+    return lastResponse;
+  }
+  if (lastError) {
+    throw lastError;
+  }
+  throw new Error("Unreachable retry state");
+}
+
+function shouldRetry(status: number): boolean {
+  return status === 408 || status === 409 || status === 429 || status >= 500;
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function parseSseResponse(

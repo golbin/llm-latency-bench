@@ -1,6 +1,6 @@
 import { DEFAULT_OUT_DIR, parseArgs } from "./config.ts";
 import { ensureDir, loadEnvMap, loadKeys } from "./env.ts";
-import { buildPrompts, buildSmokePrompts } from "./prompts.ts";
+import { buildPrompts } from "./prompts.ts";
 import { dispatchRequest } from "./providers.ts";
 import { printSummary, writeResults } from "./results.ts";
 import type {
@@ -19,7 +19,7 @@ async function main() {
   const envMap = await loadEnvMap(options.envFile);
   const keys = loadKeys(envMap);
   const prompts = buildPrompts(options.suite);
-  const selectedModels = await maybeProbeUnsupportedModels(keys, options);
+  const selectedModels = options.models.filter((entry) => entry.include);
 
   if (options.command === "probe") {
     const results = await runProbe(keys, options, selectedModels, prompts);
@@ -35,34 +35,6 @@ async function finalizeRun(outDir: string, prefix: "probe" | "run", results: Att
   const stamp = timestampSlug();
   await writeResults(outDir, `${prefix}-${stamp}`, results);
   printSummary(results, prefix);
-}
-
-async function maybeProbeUnsupportedModels(keys: Keys, options: RunOptions): Promise<ModelSpec[]> {
-  const models = options.models.map((model) => ({ ...model }));
-  const openAiMini = models.find((entry) =>
-    entry.provider === "openai" && entry.model === "gpt-5-mini"
-  );
-  if (!openAiMini || !options.includeMiniProbe) {
-    return models.filter((entry) => entry.include);
-  }
-
-  const probe = await makeAttempt(keys, {
-    modelSpec: openAiMini,
-    prompt: buildSmokePrompts()[0],
-    tier: "default",
-    variant: "baseline",
-    phase: "probe",
-    attempt: 1,
-    cacheMode: options.cacheMode,
-  });
-  openAiMini.include = probe.ok;
-  if (!probe.ok) {
-    console.error(
-      `Skipping ${openAiMini.model}: probe failed${probe.error ? ` (${probe.error})` : ""}.`,
-    );
-  }
-
-  return models.filter((entry) => entry.include);
 }
 
 async function runProbe(

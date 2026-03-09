@@ -7,7 +7,7 @@ Cross-provider latency benchmark harness for OpenAI, Anthropic, and Gemini text 
 - Single Deno CLI for `probe` and `run`
 - Common measurement shape across providers:
   - wall-clock latency
-  - TTFT
+  - TTFT (time to first visible text token)
   - provider-reported metadata when available
 - Built-in suites:
   - `smoke`
@@ -24,10 +24,15 @@ OpenAI:
 
 - `gpt-4.1`
 - `gpt-4.1-mini`
+- `gpt-5`
 - `gpt-5.1`
 - `gpt-5.2`
 - `gpt-5.4`
-- `gpt-5-mini` is probe-gated and excluded if `reasoning.effort="none"` is rejected
+- `gpt-5-mini`
+- `gpt-5-chat-latest`
+- `gpt-5.1-chat-latest`
+- `gpt-5.2-chat-latest`
+- `gpt-5.3-chat-latest`
 
 Anthropic:
 
@@ -41,6 +46,10 @@ Gemini:
 - `gemini-2.5-pro`
 - `gemini-2.5-flash`
 - `gemini-2.5-flash-lite`
+- `gemini-3-flash-preview`
+- `gemini-3-pro-preview`
+- `gemini-3.1-pro-preview`
+- `gemini-3.1-flash-lite-preview`
 
 ## Credentials
 
@@ -71,6 +80,7 @@ Basic commands:
 ```bash
 deno task probe
 deno task run --iterations 3 --warmups 1
+deno task report -- /path/to/run.json ./reports/smoke-report-2026-03-10.md
 ```
 
 Common examples:
@@ -87,17 +97,28 @@ deno task run --out-dir ./results/sample
 
 - OpenAI:
   - `default` vs `priority`
-  - `reasoning.effort="none"` on GPT-5 reasoning-family models
+  - `reasoning.effort="none"` on `gpt-5.1`, `gpt-5.2`, `gpt-5.4`
+  - `reasoning.effort="minimal"` on `gpt-5` and `gpt-5-mini`
+  - chat-latest models are benchmarked as-is and may keep provider-managed reasoning behavior
 - Anthropic:
   - `service_tier=standard_only` vs `auto`
   - `low-effort` variant for Opus 4.5 and Opus 4.6
 - Gemini:
   - direct Gemini API only
-  - `thinking-off` variant for `gemini-2.5-flash`
+  - `thinking-off` variant for `gemini-2.5-flash`, `gemini-3-flash-preview`, and
+    `gemini-3.1-flash-lite-preview`
+
+## Smoke suite notes
+
+- The smoke suite prioritizes TTFT comparability.
+- `short-qna` and `structured` use a larger output token budget so models that spend tokens on
+  internal reasoning still produce visible text.
+- TTFT is recorded when the first visible text delta arrives from the provider stream.
 
 ## Repository layout
 
 - [`src/main.ts`](./src/main.ts): CLI entry point
+- [`src/report.ts`](./src/report.ts): markdown report generator
 - [`src/config.ts`](./src/config.ts): argument parsing and defaults
 - [`src/providers.ts`](./src/providers.ts): provider adapters
 - [`src/prompts.ts`](./src/prompts.ts): benchmark suites

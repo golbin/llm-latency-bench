@@ -1,7 +1,8 @@
 {
   "tasks": {
     "probe": "deno run --allow-env --allow-net --allow-read --allow-write src/main.ts probe",
-    "run": "deno run --allow-env --allow-net --allow-read --allow-write src/main.ts run"
+    "run": "deno run --allow-env --allow-net --allow-read --allow-write src/main.ts run",
+    "report": "deno run --allow-read --allow-write src/report.ts"
   },
   "fmt": {
     "lineWidth": 100,

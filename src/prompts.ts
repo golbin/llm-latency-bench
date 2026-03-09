@@ -20,13 +20,13 @@ export function buildSmokePrompts(): PromptSpec[] {
       id: "short-qna",
       prompt:
         "Return exactly one ASCII sentence describing why latency benchmarks must control for cache effects.",
-      maxOutputTokens: 64,
+      maxOutputTokens: 256,
     },
     {
       id: "structured",
       prompt:
         "Return valid JSON with keys `goal`, `control`, and `risk`. Each value must be a short ASCII string about API latency benchmarking.",
-      maxOutputTokens: 96,
+      maxOutputTokens: 320,
     },
   ];
 }

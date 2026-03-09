@@ -11,7 +11,7 @@ export type ModelSpec = {
   supportsVariants: Variant[];
   tiers: string[];
   notes?: string;
-  openAiFamily?: "non_reasoning" | "gpt5_reasoning";
+  openAiReasoningEffort?: "none" | "minimal";
 };
 
 export type PromptSpec = {
@@ -26,7 +26,6 @@ export type RunOptions = {
   command: Command;
   iterations: number;
   warmups: number;
-  includeMiniProbe: boolean;
   models: ModelSpec[];
   providers: Provider[];
   suite: Suite;

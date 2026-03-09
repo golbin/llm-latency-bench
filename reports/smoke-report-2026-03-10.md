@@ -2,135 +2,83 @@
 
 Date: 2026-03-10
 
-This report summarizes the latest smoke benchmark runs for OpenAI, Anthropic, and Gemini.
-
-## Source Runs
-
-- OpenAI smoke run: `n=2` measured samples per cell
-- Anthropic + Gemini smoke run: `n=1` measured sample per cell
-
-The raw JSON and CSV artifacts were generated locally and are intentionally not kept in the
-repository.
+This report is generated from a local smoke benchmark run.
 
 ## Scope
 
-- Prompt set:
-  - `short-qna`
-  - `structured`
-- Metrics:
-  - wall-clock latency
-  - TTFT
-- Provider-specific settings:
-  - OpenAI: `default` vs `priority`, `reasoning.effort=none` on GPT-5 reasoning-family models
-  - Anthropic: `standard_only` vs `auto`; `low-effort` for Opus 4.5 and Opus 4.6
-  - Gemini: `baseline` vs `thinking-off` for `gemini-2.5-flash`
+- Prompt set: smoke (`short-qna`, `structured`)
+- Primary metric: TTFT (time to first visible text token)
+- Ranking method: best observed configuration per model and prompt, sorted by TTFT
+- Tie-breaker: wall-clock latency
 
 ## Caveats
 
-- This is not yet a statistically stable cross-provider comparison.
-- OpenAI results use `n=2` measured samples; Anthropic and Gemini currently use `n=1`.
-- Anthropic `auto` requests were all served as `standard`, so no Priority Tier uplift was observed
-  in this account.
-- Gemini was benchmarked through the direct Gemini API only, not Vertex AI Provisioned Throughput.
+- This repository report was generated from provider-specific smoke runs that were merged after collection.
+- OpenAI chat-latest models use model-managed reasoning; the smoke suite uses a larger output budget so TTFT includes the first visible text after that reasoning phase.
+- OpenAI `priority` and Anthropic `auto` should be interpreted using the effective tier shown in the table, not only the requested tier.
+- Gemini results use the direct Gemini API only.
+- Each published smoke cell in this report uses `n=1` measured sample.
+- This run contains 88 measured successes and 0 failed attempts.
 
-## Best Observed Latency By Provider
+## TTFT Rankings
 
 ### `short-qna`
 
-| Provider  | Best configuration                                    | Wall ms | TTFT ms |
-| --------- | ----------------------------------------------------- | ------: | ------: |
-| OpenAI    | `gpt-4.1` `priority`                                  |  872.55 |  556.20 |
-| Gemini    | `gemini-2.5-flash-lite` `baseline`                    | 1030.48 | 1011.28 |
-| Anthropic | `claude-opus-4-5-20251101` `standard_only` `baseline` | 1766.67 | 1028.10 |
+| Rank | Provider | Model | Variant | Requested Tier | Effective Tier | TTFT ms | Wall ms | n |
+| ----: | -------- | ----- | ------- | ------------- | ------------- | ------: | ------: | -: |
+| 1 | openai | `gpt-5.2` | `baseline` | `priority` | `priority` | 462.51 | 1079.59 | 1 |
+| 2 | openai | `gpt-4.1-mini` | `baseline` | `priority` | `priority` | 486.74 | 754.33 | 1 |
+| 3 | openai | `gpt-5-chat-latest` | `baseline` | `priority` | `default` | 503.99 | 706.68 | 1 |
+| 4 | openai | `gpt-5` | `baseline` | `priority` | `priority` | 527.14 | 902.15 | 1 |
+| 5 | openai | `gpt-5.1` | `baseline` | `priority` | `priority` | 542.66 | 872.80 | 1 |
+| 6 | openai | `gpt-5-mini` | `baseline` | `priority` | `priority` | 556.77 | 875.52 | 1 |
+| 7 | openai | `gpt-5.4` | `baseline` | `priority` | `priority` | 563.58 | 1143.71 | 1 |
+| 8 | openai | `gpt-4.1` | `baseline` | `default` | `default` | 572.64 | 2636.44 | 1 |
+| 9 | gemini | `gemini-2.5-flash-lite` | `baseline` | `default` | - | 850.36 | 850.86 | 1 |
+| 10 | gemini | `gemini-2.5-flash` | `thinking-off` | `default` | - | 965.07 | 974.71 | 1 |
+| 11 | openai | `gpt-5.1-chat-latest` | `baseline` | `default` | `default` | 1044.02 | 1569.20 | 1 |
+| 12 | anthropic | `claude-opus-4-5-20251101` | `low-effort` | `standard_only` | `standard` | 1197.48 | 1792.97 | 1 |
+| 13 | gemini | `gemini-3-flash-preview` | `thinking-off` | `default` | - | 1317.01 | 1320.60 | 1 |
+| 14 | openai | `gpt-5.2-chat-latest` | `baseline` | `default` | `default` | 1506.87 | 2092.44 | 1 |
+| 15 | anthropic | `claude-sonnet-4-6` | `baseline` | `standard_only` | `standard` | 1514.63 | 2572.49 | 1 |
+| 16 | anthropic | `claude-opus-4-6` | `baseline` | `standard_only` | `standard` | 1632.55 | 3087.16 | 1 |
+| 17 | openai | `gpt-5.3-chat-latest` | `baseline` | `priority` | `default` | 2010.31 | 2287.72 | 1 |
+| 18 | anthropic | `claude-sonnet-4-5-20250929` | `baseline` | `standard_only` | `standard` | 2442.42 | 3217.32 | 1 |
+| 19 | gemini | `gemini-2.5-pro` | `baseline` | `default` | - | 3058.64 | 4738.48 | 1 |
+| 20 | gemini | `gemini-3-pro-preview` | `baseline` | `default` | - | 4456.28 | 4462.58 | 1 |
+| 21 | gemini | `gemini-3.1-pro-preview` | `baseline` | `default` | - | 4835.84 | 4841.52 | 1 |
+| 22 | gemini | `gemini-3.1-flash-lite-preview` | `baseline` | `default` | - | 8571.59 | 8576.76 | 1 |
 
 ### `structured`
 
-| Provider  | Best configuration                                      | Wall ms | TTFT ms |
-| --------- | ------------------------------------------------------- | ------: | ------: |
-| OpenAI    | `gpt-4.1` `priority`                                    |  910.85 |  581.98 |
-| Gemini    | `gemini-2.5-flash` `thinking-off`                       | 1289.39 |  997.29 |
-| Anthropic | `claude-opus-4-5-20251101` `standard_only` `low-effort` | 1917.04 |  873.67 |
+| Rank | Provider | Model | Variant | Requested Tier | Effective Tier | TTFT ms | Wall ms | n |
+| ----: | -------- | ----- | ------- | ------------- | ------------- | ------: | ------: | -: |
+| 1 | openai | `gpt-5-chat-latest` | `baseline` | `default` | `default` | 432.28 | 905.35 | 1 |
+| 2 | openai | `gpt-5.2` | `baseline` | `priority` | `priority` | 486.48 | 1329.33 | 1 |
+| 3 | openai | `gpt-5.4` | `baseline` | `default` | `default` | 499.28 | 1017.96 | 1 |
+| 4 | openai | `gpt-5.1` | `baseline` | `priority` | `priority` | 505.82 | 941.02 | 1 |
+| 5 | openai | `gpt-4.1-mini` | `baseline` | `default` | `default` | 514.22 | 1208.80 | 1 |
+| 6 | openai | `gpt-5` | `baseline` | `priority` | `priority` | 515.55 | 1010.98 | 1 |
+| 7 | openai | `gpt-5-mini` | `baseline` | `priority` | `priority` | 537.85 | 897.32 | 1 |
+| 8 | openai | `gpt-4.1` | `baseline` | `default` | `default` | 629.04 | 1383.16 | 1 |
+| 9 | anthropic | `claude-sonnet-4-5-20250929` | `baseline` | `auto` | `standard` | 719.58 | 2192.81 | 1 |
+| 10 | gemini | `gemini-2.5-flash-lite` | `baseline` | `default` | - | 860.97 | 863.61 | 1 |
+| 11 | anthropic | `claude-opus-4-5-20251101` | `low-effort` | `standard_only` | `standard` | 1073.71 | 2880.96 | 1 |
+| 12 | gemini | `gemini-2.5-flash` | `thinking-off` | `default` | - | 1157.01 | 1291.27 | 1 |
+| 13 | openai | `gpt-5.1-chat-latest` | `baseline` | `default` | `default` | 1177.66 | 1719.29 | 1 |
+| 14 | anthropic | `claude-sonnet-4-6` | `baseline` | `standard_only` | `standard` | 1213.27 | 2536.91 | 1 |
+| 15 | gemini | `gemini-3.1-flash-lite-preview` | `thinking-off` | `default` | - | 1378.83 | 1464.92 | 1 |
+| 16 | gemini | `gemini-3-flash-preview` | `thinking-off` | `default` | - | 1586.98 | 1695.19 | 1 |
+| 17 | openai | `gpt-5.3-chat-latest` | `baseline` | `priority` | `default` | 1753.51 | 2096.82 | 1 |
+| 18 | anthropic | `claude-opus-4-6` | `baseline` | `auto` | `standard` | 1811.82 | 3732.32 | 1 |
+| 19 | openai | `gpt-5.2-chat-latest` | `baseline` | `priority` | `default` | 2004.69 | 2819.74 | 1 |
+| 20 | gemini | `gemini-2.5-pro` | `baseline` | `default` | - | 4903.55 | 7152.13 | 1 |
+| 21 | gemini | `gemini-3.1-pro-preview` | `baseline` | `default` | - | 5378.95 | 5379.25 | 1 |
+| 22 | gemini | `gemini-3-pro-preview` | `baseline` | `default` | - | 5758.60 | 5764.46 | 1 |
 
-## OpenAI
+## Provider Notes
 
-OpenAI was the fastest provider in both smoke prompts in the current dataset. The strongest overall
-configuration was `gpt-4.1` with `priority`, followed closely by `gpt-5.1` `priority` on
-`short-qna`.
+- OpenAI: 8 measured rows requested `priority` but were served as `default`.
+- Anthropic: 0 measured `auto` rows were actually served as `priority`.
+- Gemini: 6 measured rows used `thinking-off`.
 
-| Model     | Prompt       | Default wall ms | Priority wall ms | Improvement |
-| --------- | ------------ | --------------: | ---------------: | ----------: |
-| `gpt-4.1` | `short-qna`  |          922.65 |           872.55 |        5.4% |
-| `gpt-4.1` | `structured` |         1725.91 |           910.85 |       47.2% |
-| `gpt-5.1` | `short-qna`  |         1226.63 |           875.95 |       28.6% |
-| `gpt-5.1` | `structured` |         1433.85 |          1022.30 |       28.7% |
-| `gpt-5.4` | `short-qna`  |         1104.20 |           925.80 |       16.2% |
-| `gpt-5.4` | `structured` |         1164.19 |           951.98 |       18.2% |
-
-Notes:
-
-- `gpt-5-mini` was excluded because the API rejected `reasoning.effort="none"`.
-- All recorded OpenAI `priority` requests came back with `responseTier="priority"` in the validated
-  runs.
-
-## Anthropic
-
-Anthropic completed successfully across Sonnet 4.5/4.6 and Opus 4.5/4.6. In this account, `auto`
-never escalated beyond `standard`, so the `auto` vs `standard_only` comparison does not represent
-true priority capacity.
-
-Best observed Anthropic configurations:
-
-| Model                      | Prompt       | Best configuration         | Wall ms |
-| -------------------------- | ------------ | -------------------------- | ------: |
-| `claude-sonnet-4-6`        | `short-qna`  | `standard_only baseline`   | 2472.82 |
-| `claude-sonnet-4-6`        | `structured` | `standard_only baseline`   | 2621.79 |
-| `claude-opus-4-5-20251101` | `short-qna`  | `standard_only baseline`   | 1766.67 |
-| `claude-opus-4-5-20251101` | `structured` | `standard_only low-effort` | 1917.04 |
-| `claude-opus-4-6`          | `short-qna`  | `auto low-effort`          | 2479.45 |
-| `claude-opus-4-6`          | `structured` | `standard_only low-effort` | 3243.16 |
-
-Observed `low-effort` effects:
-
-- `claude-opus-4-6` improved consistently in this smoke sample:
-  - `short-qna`: 10.5% faster on `standard_only`
-  - `structured`: 13.3% faster on `standard_only`
-  - `short-qna`: 21.2% faster on `auto`
-  - `structured`: 12.0% faster on `auto`
-- `claude-opus-4-5-20251101` was inconsistent:
-  - `structured` improved strongly on `standard_only`
-  - `short-qna` regressed in both tiers
-
-## Gemini
-
-Gemini direct API ran successfully for `gemini-2.5-pro`, `gemini-2.5-flash`, and
-`gemini-2.5-flash-lite`. The main useful optimization in this dataset was `thinking-off` on
-`gemini-2.5-flash`.
-
-| Model              | Prompt       | Baseline wall ms | Optimized wall ms | Improvement |
-| ------------------ | ------------ | ---------------: | ----------------: | ----------: |
-| `gemini-2.5-flash` | `short-qna`  |          1725.10 |           1187.82 |       31.1% |
-| `gemini-2.5-flash` | `structured` |          1416.39 |           1289.39 |        9.0% |
-
-Other notable Gemini results:
-
-- `gemini-2.5-flash-lite` was the fastest Gemini model on `short-qna` at 1030.48 ms.
-- `gemini-2.5-pro` was the slowest Gemini model in the smoke run:
-  - `short-qna`: 3142.13 ms
-  - `structured`: 4396.70 ms
-
-## Takeaways
-
-1. In the current smoke data, OpenAI has the lowest latency floor.
-2. Gemini is the closest provider to OpenAI on short outputs when using `flash-lite` or `flash` with
-   `thinking-off`.
-3. Anthropic appears materially slower in this account and test shape, but this needs a larger
-   sample before treating it as a stable ranking.
-4. Anthropic `auto` should not be interpreted as a priority benchmark here because all responses
-   were still served as `standard`.
-
-## Next Steps
-
-1. Re-run all providers at `n=10` minimum for smoke.
-2. Run `input-latency` and `output-latency` suites across all three providers.
-3. Add a second Anthropic report after confirming real Priority Tier entitlement.
-4. Add Vertex AI `shared` vs `dedicated` Gemini results if Provisioned Throughput becomes available.

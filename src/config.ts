@@ -31,7 +31,6 @@ export function parseArgs(args: string[]): RunOptions {
     command,
     iterations: parsePositiveInt(flags.get("iterations")) ?? DEFAULT_ITERATIONS,
     warmups: parsePositiveInt(flags.get("warmups")) ?? DEFAULT_WARMUPS,
-    includeMiniProbe: (flags.get("probe-mini") ?? "true") !== "false",
     models: parseModelList(flags.get("models"), providers),
     providers,
     suite: parseSuite(flags.get("suite")),
