@@ -11,6 +11,7 @@ Cross-provider latency benchmark harness for OpenAI, Anthropic, and Gemini text 
   - provider-reported metadata when available
 - Built-in suites:
   - `smoke`
+  - `one-sentence`
   - `input-latency`
   - `output-latency`
   - `full`
@@ -81,12 +82,14 @@ Basic commands:
 deno task probe
 deno task run --iterations 3 --warmups 1
 deno task report -- /path/to/run.json ./reports/smoke-report-2026-03-10.md
+deno task fastest-report -- /path/to/fastest.json /path/to/strict.json ./reports/fastest-achievable-report-2026-03-10.md
 ```
 
 Common examples:
 
 ```bash
 deno task run --providers anthropic,gemini --suite smoke
+deno task run --suite one-sentence --iterations 3 --warmups 1
 deno task run --models claude-opus-4-6,gemini-2.5-flash --suite smoke
 deno task run --suite input-latency --iterations 3 --warmups 1
 deno task run --suite output-latency --cache-mode warm
@@ -115,16 +118,26 @@ deno task run --out-dir ./results/sample
   internal reasoning still produce visible text.
 - TTFT is recorded when the first visible text delta arrives from the provider stream.
 
+## One-sentence suite
+
+- `one-sentence` is the deployment-oriented suite for minimum-latency comparisons.
+- It uses a single exact-sentence prompt and records both TTFT and full completion wall time.
+- This is the best fit when comparing "fastest achievable" service configurations across models.
+
 ## Repository layout
 
 - [`src/main.ts`](./src/main.ts): CLI entry point
 - [`src/report.ts`](./src/report.ts): markdown report generator
+- [`src/fastest_report.ts`](./src/fastest_report.ts): one-sentence fastest-achievable report
+  generator
 - [`src/config.ts`](./src/config.ts): argument parsing and defaults
 - [`src/providers.ts`](./src/providers.ts): provider adapters
 - [`src/prompts.ts`](./src/prompts.ts): benchmark suites
 - [`src/results.ts`](./src/results.ts): summaries and CSV/JSON output
 - [`reports/smoke-report-2026-03-10.md`](./reports/smoke-report-2026-03-10.md): current published
   smoke report
+- [`reports/fastest-achievable-report-2026-03-10.md`](./reports/fastest-achievable-report-2026-03-10.md):
+  current fastest-achievable one-sentence report
 
 ## Publishing hygiene
 

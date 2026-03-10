@@ -2,7 +2,8 @@
   "tasks": {
     "probe": "deno run --allow-env --allow-net --allow-read --allow-write src/main.ts probe",
     "run": "deno run --allow-env --allow-net --allow-read --allow-write src/main.ts run",
-    "report": "deno run --allow-read --allow-write src/report.ts"
+    "report": "deno run --allow-read --allow-write src/report.ts",
+    "fastest-report": "deno run --allow-read --allow-write src/fastest_report.ts"
   },
   "fmt": {
     "lineWidth": 100,

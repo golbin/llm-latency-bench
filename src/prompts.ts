@@ -2,6 +2,8 @@ import type { PromptSpec, Suite } from "./types.ts";
 
 export function buildPrompts(suite: Suite): PromptSpec[] {
   switch (suite) {
+    case "one-sentence":
+      return buildOneSentencePrompts();
     case "input-latency":
       return buildInputLatencyPrompts();
     case "output-latency":
@@ -12,6 +14,17 @@ export function buildPrompts(suite: Suite): PromptSpec[] {
     default:
       return buildSmokePrompts();
   }
+}
+
+function buildOneSentencePrompts(): PromptSpec[] {
+  return [
+    {
+      id: "one-sentence",
+      prompt:
+        "Return exactly one ASCII sentence describing why latency benchmarks must control for cache effects.",
+      maxOutputTokens: 256,
+    },
+  ];
 }
 
 export function buildSmokePrompts(): PromptSpec[] {

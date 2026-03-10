@@ -43,7 +43,7 @@ function parseCommand(value?: string): Command {
     return value;
   }
   throw new Error(
-    "Usage: deno task <probe|run> [--providers openai,anthropic,gemini] [--suite smoke|input-latency|output-latency|full]",
+    "Usage: deno task <probe|run> [--providers openai,anthropic,gemini] [--suite smoke|one-sentence|input-latency|output-latency|full]",
   );
 }
 
@@ -86,6 +86,7 @@ function parseModelList(value: string | undefined, providers: Provider[]): Model
 function parseSuite(value?: string): Suite {
   if (
     value === "smoke" ||
+    value === "one-sentence" ||
     value === "input-latency" ||
     value === "output-latency" ||
     value === "full"

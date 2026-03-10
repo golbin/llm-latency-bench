@@ -1,6 +1,6 @@
 export type Command = "probe" | "run";
 export type Provider = "openai" | "anthropic" | "gemini";
-export type Suite = "smoke" | "input-latency" | "output-latency" | "full";
+export type Suite = "smoke" | "one-sentence" | "input-latency" | "output-latency" | "full";
 export type CacheMode = "cold" | "warm";
 export type Variant = "baseline" | "low-effort" | "thinking-off";
 
