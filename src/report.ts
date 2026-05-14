@@ -64,7 +64,7 @@ function buildSmokeReport(results: AttemptResult[]): string {
     "- OpenAI `priority` and Anthropic `auto` should be interpreted using the effective tier shown in the table, not only the requested tier.",
   );
   lines.push("- Gemini results use the direct Gemini API only.");
-  lines.push("- Each published smoke cell in this report uses `n=1` measured sample.");
+  lines.push("- The `n` column shows the measured sample count for each ranked cell.");
   lines.push(
     `- This run contains ${measured.length} measured successes and ${failures.length} failed attempts.`,
   );
