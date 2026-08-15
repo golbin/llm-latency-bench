@@ -50,9 +50,9 @@ OpenAI는 priority, Vertex AI는 Standard(global) 가격을 적용했다.
 | ---: | --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
 | 1 | `solar-pro4` | Upstage | reasoning none | 884.65 ms | 384.95 ms | $0.03* | $0.12* | 3 |
 | 2 | `gpt-4.1` | OpenAI | priority | 888.27 ms | 584.36 ms | $3.50 | $14.00 | 3 |
-| 3 | `gpt-5.6-luna` | OpenAI | priority, reasoning none | 947.52 ms | 645.82 ms | $2.00 | $12.00 | 3 |
+| 3 | `gpt-5.6-luna` | OpenAI | priority, reasoning none | 947.52 ms | 645.82 ms | $0.40 | $2.40 | 3 |
 | 4 | `gpt-4.1-mini` | OpenAI | priority | 959.45 ms | 561.26 ms | $0.70 | $2.80 | 3 |
-| 5 | `gpt-5.6-terra` | OpenAI | priority, reasoning none | 992.55 ms | 715.15 ms | $5.00 | $30.00 | 3 |
+| 5 | `gpt-5.6-terra` | OpenAI | priority, reasoning none | 992.55 ms | 715.15 ms | $4.00 | $24.00 | 3 |
 | 6 | `gemini-3.5-flash-lite` | Vertex AI | thinking off | 1,037.75 ms | 772.57 ms | $0.30 | $2.50 | 3 |
 | 7 | `gpt-5.2` | OpenAI | priority, reasoning none | 1,291.90 ms | 634.83 ms | $3.50 | $28.00 | 3 |
 | 8 | `gemini-3.6-flash` | Vertex AI | thinking off | 1,318.88 ms | 1,071.94 ms | $0.75** | $3.75** | 3 |
@@ -76,10 +76,10 @@ text tokens다.
 | `gpt-4.1` | Priority | 888.27 ms | 584.36 ms | $3.50 | $14.00 | 36.2% |
 | `gpt-4.1-mini` | Standard | 1,476.19 ms | 1,097.75 ms | $0.40 | $1.60 | — |
 | `gpt-4.1-mini` | Priority | 959.45 ms | 561.26 ms | $0.70 | $2.80 | 35.0% |
-| `gpt-5.6-luna` | Standard, reasoning none | 987.86 ms | 592.11 ms | $1.00 | $6.00 | — |
-| `gpt-5.6-luna` | Priority, reasoning none | 947.52 ms | 645.82 ms | $2.00 | $12.00 | 4.1% |
-| `gpt-5.6-terra` | Standard, reasoning none | 1,173.58 ms | 829.03 ms | $2.50 | $15.00 | — |
-| `gpt-5.6-terra` | Priority, reasoning none | 992.55 ms | 715.15 ms | $5.00 | $30.00 | 15.4% |
+| `gpt-5.6-luna` | Standard, reasoning none | 987.86 ms | 592.11 ms | $0.20 | $1.20 | — |
+| `gpt-5.6-luna` | Priority, reasoning none | 947.52 ms | 645.82 ms | $0.40 | $2.40 | 4.1% |
+| `gpt-5.6-terra` | Standard, reasoning none | 1,173.58 ms | 829.03 ms | $2.00 | $12.00 | — |
+| `gpt-5.6-terra` | Priority, reasoning none | 992.55 ms | 715.15 ms | $4.00 | $24.00 | 15.4% |
 | `gpt-5.2` | Standard, reasoning none | 1,363.25 ms | 649.37 ms | $1.75 | $14.00 | — |
 | `gpt-5.2` | Priority, reasoning none | 1,291.90 ms | 634.83 ms | $3.50 | $28.00 | 5.2% |
 
