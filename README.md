@@ -1,6 +1,6 @@
 # llm-latency-bench
 
-Cross-provider latency benchmark harness for OpenAI, Anthropic, and Gemini text models.
+Cross-provider latency benchmark harness for OpenAI, Anthropic, Gemini, and Upstage text models.
 
 ## Overview
 
@@ -31,12 +31,16 @@ OpenAI:
 - `gpt-5.4`
 - `gpt-5.5`
 - `gpt-5-mini`
+- `gpt-5.6-sol`
+- `gpt-5.6-terra`
+- `gpt-5.6-luna`
 - `chat-latest`
 
 Anthropic:
 
 - `claude-sonnet-4-5-20250929`
 - `claude-sonnet-4-6`
+- `claude-sonnet-5`
 - `claude-opus-4-5-20251101`
 - `claude-opus-4-6`
 
@@ -49,6 +53,13 @@ Gemini:
 - `gemini-3-pro-preview`
 - `gemini-3.1-pro-preview`
 - `gemini-3.1-flash-lite-preview`
+- `gemini-3.7-flash` (Vertex AI)
+- `gemini-3.6-flash` (Vertex AI)
+- `gemini-3.5-flash-lite` (Vertex AI)
+
+Upstage:
+
+- `solar-pro4`
 
 ## Credentials
 
@@ -58,6 +69,10 @@ Set API keys in the shell, or create a local `.env` from [`.env.example`](./.env
 export OPENAI_API_KEY=...
 export ANTHROPIC_API_KEY=...
 export GOOGLE_API_KEY=...
+export UPSTAGE_API_KEY=...
+export VERTEX_AI_PROJECT=...
+export VERTEX_AI_LOCATION=...
+export VERTEX_AI_SERVICE_ACCOUNT=...
 ```
 
 Or pass an explicit file:
@@ -105,7 +120,8 @@ deno task run --out-dir ./results/sample
   - `service_tier=standard_only` vs `auto`
   - `low-effort` variant for Opus 4.5 and Opus 4.6
 - Gemini:
-  - direct Gemini API only
+  - direct Gemini API for existing models; Vertex AI for `gemini-3.7-flash`,
+    `gemini-3.6-flash`, and `gemini-3.5-flash-lite`
   - `thinking-off` variant for `gemini-2.5-flash`, `gemini-3-flash-preview`, and
     `gemini-3.1-flash-lite-preview`
 

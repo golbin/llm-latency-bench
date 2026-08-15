@@ -1,8 +1,13 @@
 export type Command = "probe" | "run";
-export type Provider = "openai" | "anthropic" | "gemini";
+export type Provider = "openai" | "anthropic" | "gemini" | "upstage";
 export type Suite = "smoke" | "one-sentence" | "input-latency" | "output-latency" | "full";
 export type CacheMode = "cold" | "warm";
-export type Variant = "baseline" | "low-effort" | "thinking-off";
+export type Variant =
+  | "baseline"
+  | "low-effort"
+  | "thinking-off"
+  | "thinking-low"
+  | "thinking-minimal";
 
 export type ModelSpec = {
   provider: Provider;
@@ -12,6 +17,8 @@ export type ModelSpec = {
   tiers: string[];
   notes?: string;
   openAiReasoningEffort?: "none" | "minimal";
+  upstageReasoningEffort?: "none" | "low";
+  geminiBackend?: "direct" | "vertex";
 };
 
 export type PromptSpec = {
@@ -59,6 +66,10 @@ export type Keys = {
   anthropic: string | null;
   google: string | null;
   openai: string | null;
+  upstage: string | null;
+  vertexLocation: string | null;
+  vertexProject: string | null;
+  vertexServiceAccount: string | null;
 };
 
 export type GenericRequestParams = {
@@ -92,4 +103,5 @@ export type SseParseResult = {
   responseModel: string | null;
   responseTier: string | null;
   outputTokens: number | null;
+  streamError: string | null;
 };

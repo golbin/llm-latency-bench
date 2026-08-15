@@ -37,6 +37,11 @@ export function loadKeys(envMap: Map<string, string>): Keys {
     openai: Deno.env.get("OPENAI_API_KEY") ?? envMap.get("OPENAI_API_KEY") ?? null,
     anthropic: Deno.env.get("ANTHROPIC_API_KEY") ?? envMap.get("ANTHROPIC_API_KEY") ?? null,
     google: Deno.env.get("GOOGLE_API_KEY") ?? envMap.get("GOOGLE_API_KEY") ?? null,
+    upstage: Deno.env.get("UPSTAGE_API_KEY") ?? envMap.get("UPSTAGE_API_KEY") ?? null,
+    vertexProject: Deno.env.get("VERTEX_AI_PROJECT") ?? envMap.get("VERTEX_AI_PROJECT") ?? null,
+    vertexLocation: Deno.env.get("VERTEX_AI_LOCATION") ?? envMap.get("VERTEX_AI_LOCATION") ?? null,
+    vertexServiceAccount: Deno.env.get("VERTEX_AI_SERVICE_ACCOUNT") ??
+      envMap.get("VERTEX_AI_SERVICE_ACCOUNT") ?? null,
   };
 }
 

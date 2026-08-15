@@ -43,7 +43,7 @@ function parseCommand(value?: string): Command {
     return value;
   }
   throw new Error(
-    "Usage: deno task <probe|run> [--providers openai,anthropic,gemini] [--suite smoke|one-sentence|input-latency|output-latency|full]",
+    "Usage: deno task <probe|run> [--providers openai,anthropic,gemini,upstage] [--suite smoke|one-sentence|input-latency|output-latency|full]",
   );
 }
 
@@ -57,16 +57,16 @@ function parsePositiveInt(value?: string): number | null {
 
 function parseProviders(value?: string): Provider[] {
   if (!value) {
-    return ["openai", "anthropic", "gemini"];
+    return ["openai", "anthropic", "gemini", "upstage"];
   }
 
   const providers = value
     .split(",")
     .map((item) => item.trim())
     .filter((item): item is Provider =>
-      item === "openai" || item === "anthropic" || item === "gemini"
+      item === "openai" || item === "anthropic" || item === "gemini" || item === "upstage"
     );
-  return providers.length > 0 ? providers : ["openai", "anthropic", "gemini"];
+  return providers.length > 0 ? providers : ["openai", "anthropic", "gemini", "upstage"];
 }
 
 function parseModelList(value: string | undefined, providers: Provider[]): ModelSpec[] {

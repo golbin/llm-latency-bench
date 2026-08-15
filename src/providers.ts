@@ -2,6 +2,7 @@ import { compactError, parseHeaderNumber, roundMs } from "./results.ts";
 import type { GenericRequestParams, Keys, ProviderResponse, SseParseResult } from "./types.ts";
 
 const REQUEST_TIMEOUT_MS = 30_000;
+let vertexTokenCache: { token: string; expiresAtMs: number } | null = null;
 
 export async function dispatchRequest(
   keys: Keys,
@@ -14,7 +15,12 @@ export async function dispatchRequest(
     case "anthropic":
       return await makeAnthropicRequest(keys.anthropic, params, inputPrompt);
     case "gemini":
+      if (params.modelSpec.geminiBackend === "vertex") {
+        return await makeVertexGeminiRequest(keys, params, inputPrompt);
+      }
       return await makeGeminiRequest(keys.google, params, inputPrompt);
+    case "upstage":
+      return await makeUpstageRequest(keys.upstage, params, inputPrompt);
   }
 }
 
@@ -105,6 +111,9 @@ async function makeOpenAiRequest(
       readOpenAiEvent,
       extractOpenAiTextDelta,
     );
+    if (stream.streamError) {
+      return providerFailure(started, requestId, processingMs, stream.streamError);
+    }
 
     return {
       ok: true,
@@ -178,6 +187,9 @@ async function makeAnthropicRequest(
       readAnthropicEvent,
       extractAnthropicTextDelta,
     );
+    if (stream.streamError) {
+      return providerFailure(started, requestId, null, stream.streamError);
+    }
 
     return {
       ok: true,
@@ -257,6 +269,9 @@ async function makeGeminiRequest(
       readGeminiEvent,
       extractGeminiTextDelta,
     );
+    if (stream.streamError) {
+      return providerFailure(started, requestId, null, stream.streamError);
+    }
 
     return {
       ok: true,
@@ -267,6 +282,158 @@ async function makeGeminiRequest(
       responseId: stream.responseId,
       responseModel: stream.responseModel,
       responseTier: stream.responseTier,
+      outputText: stream.text,
+      outputTokens: stream.outputTokens,
+      error: null,
+    };
+  } catch (error) {
+    return providerFailure(
+      started,
+      null,
+      null,
+      error instanceof Error ? error.message : String(error),
+    );
+  }
+}
+
+async function makeVertexGeminiRequest(
+  keys: Keys,
+  params: GenericRequestParams,
+  inputPrompt: string,
+): Promise<ProviderResponse> {
+  if (!keys.vertexProject || !keys.vertexLocation || !keys.vertexServiceAccount) {
+    return missingKeyResult(
+      "VERTEX_AI_PROJECT, VERTEX_AI_LOCATION, or VERTEX_AI_SERVICE_ACCOUNT",
+    );
+  }
+
+  const started = performance.now();
+  try {
+    const accessToken = await getVertexAccessToken(keys.vertexServiceAccount);
+    const generationConfig: Record<string, unknown> = {
+      maxOutputTokens: params.prompt.maxOutputTokens,
+    };
+    if (params.variant === "thinking-low") {
+      generationConfig.thinkingConfig = { thinkingLevel: "LOW" };
+    } else if (params.variant === "thinking-minimal") {
+      generationConfig.thinkingConfig = { thinkingLevel: "MINIMAL" };
+    } else if (params.variant === "thinking-off") {
+      generationConfig.thinkingConfig = { thinkingBudget: 0 };
+    }
+    const body = {
+      contents: [{ role: "user", parts: [{ text: inputPrompt }] }],
+      generationConfig,
+    };
+    const baseUrl = keys.vertexLocation === "global"
+      ? "https://aiplatform.googleapis.com"
+      : `https://${keys.vertexLocation}-aiplatform.googleapis.com`;
+    const modelPath = [
+      "v1",
+      "projects",
+      encodeURIComponent(keys.vertexProject),
+      "locations",
+      encodeURIComponent(keys.vertexLocation),
+      "publishers/google/models",
+      encodeURIComponent(params.modelSpec.model),
+    ].join("/");
+    const response = await fetchWithRetry(
+      `${baseUrl}/${modelPath}:streamGenerateContent?alt=sse`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      },
+    );
+
+    const requestId = response.headers.get("x-request-id") ?? response.headers.get("request-id");
+    if (!response.ok) {
+      return providerFailure(started, requestId, null, await response.text());
+    }
+
+    const stream = await parseSseResponse(
+      response,
+      started,
+      readGeminiEvent,
+      extractGeminiTextDelta,
+    );
+    if (stream.streamError) {
+      return providerFailure(started, requestId, null, stream.streamError);
+    }
+    return {
+      ok: true,
+      wallMs: roundMs(performance.now() - started),
+      ttftMs: stream.ttftMs,
+      processingMs: null,
+      requestId,
+      responseId: stream.responseId,
+      responseModel: stream.responseModel,
+      responseTier: null,
+      outputText: stream.text,
+      outputTokens: stream.outputTokens,
+      error: null,
+    };
+  } catch (error) {
+    return providerFailure(
+      started,
+      null,
+      null,
+      error instanceof Error ? error.message : String(error),
+    );
+  }
+}
+
+async function makeUpstageRequest(
+  apiKey: string | null,
+  params: GenericRequestParams,
+  inputPrompt: string,
+): Promise<ProviderResponse> {
+  if (!apiKey) {
+    return missingKeyResult("UPSTAGE_API_KEY");
+  }
+
+  const started = performance.now();
+  try {
+    const response = await fetchWithRetry("https://api.upstage.ai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: params.modelSpec.model,
+        messages: [{ role: "user", content: inputPrompt }],
+        max_tokens: params.prompt.maxOutputTokens,
+        reasoning_effort: params.modelSpec.upstageReasoningEffort,
+        stream: true,
+        stream_options: { include_usage: true },
+      }),
+    });
+    const requestId = response.headers.get("x-request-id") ?? response.headers.get("request-id");
+    if (!response.ok) {
+      return providerFailure(started, requestId, null, await response.text());
+    }
+
+    const stream = await parseSseResponse(
+      response,
+      started,
+      readOpenAiCompatibleEvent,
+      extractOpenAiCompatibleTextDelta,
+    );
+    if (stream.streamError) {
+      return providerFailure(started, requestId, null, stream.streamError);
+    }
+    return {
+      ok: true,
+      wallMs: roundMs(performance.now() - started),
+      ttftMs: stream.ttftMs,
+      processingMs: null,
+      requestId,
+      responseId: stream.responseId,
+      responseModel: stream.responseModel,
+      responseTier: null,
       outputText: stream.text,
       outputTokens: stream.outputTokens,
       error: null,
@@ -336,6 +503,7 @@ async function parseSseResponse(
       responseModel: null,
       responseTier: null,
       outputTokens: null,
+      streamError: null,
     };
   }
 
@@ -373,6 +541,19 @@ async function parseSseResponse(
         continue;
       }
 
+      const streamError = extractStreamError(parsed.event, payload);
+      if (streamError) {
+        return {
+          text,
+          ttftMs,
+          responseId,
+          responseModel,
+          responseTier,
+          outputTokens,
+          streamError,
+        };
+      }
+
       const meta = readEvent(payload);
       responseId = typeof meta.responseId === "string" ? meta.responseId : responseId;
       responseModel = typeof meta.responseModel === "string" ? meta.responseModel : responseModel;
@@ -398,7 +579,30 @@ async function parseSseResponse(
     responseModel,
     responseTier,
     outputTokens,
+    streamError: null,
   };
+}
+
+function extractStreamError(event: string | null, payload: Record<string, unknown>): string | null {
+  if (!payload.error && event !== "error" && event !== "response.failed") {
+    return null;
+  }
+
+  const response = payload.response && typeof payload.response === "object"
+    ? payload.response as Record<string, unknown>
+    : null;
+  const errorObj = (response?.error ?? payload.error) as Record<string, unknown> | null;
+
+  if (errorObj && typeof errorObj === "object") {
+    const message = typeof errorObj.message === "string" ? errorObj.message : null;
+    const code = typeof errorObj.code === "string" ? errorObj.code : null;
+    if (message && code) {
+      return `${code}: ${message}`;
+    }
+    return message ?? JSON.stringify(errorObj);
+  }
+
+  return null;
 }
 
 function parseSseEvent(rawEvent: string): { event: string | null; data: string } | null {
@@ -524,4 +728,111 @@ function extractGeminiTextDelta(event: Record<string, unknown>): string {
       return typeof text === "string" ? text : "";
     })
     .join("");
+}
+
+function readOpenAiCompatibleEvent(event: Record<string, unknown>): Partial<SseParseResult> {
+  const usage = event.usage && typeof event.usage === "object"
+    ? event.usage as Record<string, unknown>
+    : null;
+  return {
+    responseId: typeof event.id === "string" ? event.id : null,
+    responseModel: typeof event.model === "string" ? event.model : null,
+    outputTokens: typeof usage?.completion_tokens === "number" ? usage.completion_tokens : null,
+  };
+}
+
+function extractOpenAiCompatibleTextDelta(event: Record<string, unknown>): string {
+  const choices = Array.isArray(event.choices) ? event.choices : [];
+  const first = choices[0] && typeof choices[0] === "object"
+    ? choices[0] as Record<string, unknown>
+    : null;
+  const delta = first?.delta && typeof first.delta === "object"
+    ? first.delta as Record<string, unknown>
+    : null;
+  return typeof delta?.content === "string" ? delta.content : "";
+}
+
+async function getVertexAccessToken(serviceAccountJson: string): Promise<string> {
+  if (vertexTokenCache && vertexTokenCache.expiresAtMs > Date.now() + 60_000) {
+    return vertexTokenCache.token;
+  }
+
+  const credentials = JSON.parse(serviceAccountJson) as Record<string, unknown>;
+  const clientEmail = typeof credentials.client_email === "string"
+    ? credentials.client_email
+    : null;
+  const privateKey = typeof credentials.private_key === "string" ? credentials.private_key : null;
+  const tokenUri = typeof credentials.token_uri === "string"
+    ? credentials.token_uri
+    : "https://oauth2.googleapis.com/token";
+  if (!clientEmail || !privateKey) {
+    throw new Error("VERTEX_AI_SERVICE_ACCOUNT lacks client_email or private_key");
+  }
+
+  const now = Math.floor(Date.now() / 1000);
+  const header = base64UrlJson({ alg: "RS256", typ: "JWT" });
+  const claims = base64UrlJson({
+    iss: clientEmail,
+    scope: "https://www.googleapis.com/auth/cloud-platform",
+    aud: tokenUri,
+    iat: now,
+    exp: now + 3600,
+  });
+  const signingInput = `${header}.${claims}`;
+  const keyData = pemToBytes(privateKey);
+  const cryptoKey = await crypto.subtle.importKey(
+    "pkcs8",
+    keyData,
+    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const signature = await crypto.subtle.sign(
+    "RSASSA-PKCS1-v1_5",
+    cryptoKey,
+    new TextEncoder().encode(signingInput),
+  );
+  const assertion = `${signingInput}.${base64UrlBytes(new Uint8Array(signature))}`;
+  const tokenResponse = await fetch(tokenUri, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+      assertion,
+    }),
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+  });
+  if (!tokenResponse.ok) {
+    throw new Error(`Vertex OAuth failed: ${compactError(await tokenResponse.text())}`);
+  }
+  const tokenPayload = await tokenResponse.json() as Record<string, unknown>;
+  if (typeof tokenPayload.access_token !== "string") {
+    throw new Error("Vertex OAuth response lacks access_token");
+  }
+  const expiresIn = typeof tokenPayload.expires_in === "number" ? tokenPayload.expires_in : 3600;
+  vertexTokenCache = {
+    token: tokenPayload.access_token,
+    expiresAtMs: Date.now() + expiresIn * 1000,
+  };
+  return vertexTokenCache.token;
+}
+
+function pemToBytes(pem: string): ArrayBuffer {
+  const base64 = pem
+    .replace("-----BEGIN PRIVATE KEY-----", "")
+    .replace("-----END PRIVATE KEY-----", "")
+    .replaceAll(/\s/g, "");
+  return Uint8Array.from(atob(base64), (char) => char.charCodeAt(0)).buffer;
+}
+
+function base64UrlJson(value: Record<string, unknown>): string {
+  return base64UrlBytes(new TextEncoder().encode(JSON.stringify(value)));
+}
+
+function base64UrlBytes(value: Uint8Array): string {
+  let binary = "";
+  for (const byte of value) {
+    binary += String.fromCharCode(byte);
+  }
+  return btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
 }
